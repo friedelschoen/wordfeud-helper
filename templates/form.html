@@ -1,0 +1,23 @@
+<form method="GET" action="/search">
+    <label>
+        Beschikbare letters:
+        <input type="text" name="letters" value="{{.Letters}}" placeholder="bijv. hezyhnl" required>
+    </label>
+
+    <label>
+        Patroon:
+        <input type="text" name="pattern" value="{{.Pattern}}" placeholder="bijv. %ll?">
+    </label>
+
+    <button type="submit">Zoek</button>
+
+    <details open>
+        <summary>Uitleg patroon</summary>
+        <ul>
+            <li><code>?</code> - precies één letter uit je letterset</li>
+            <li><code>%</code> - nul of meer letters uit je letterset</li>
+            <li><code>&amp;</code> - precies één willekeurige letter (geen restrictie)</li>
+            <li><code>*</code> - nul of meer willekeurige letters</li>
+        </ul>
+    </details>
+</form>
