@@ -3,14 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Resultaten</title>
+    <title>Wordfeud Helper</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css">
 </head>
 
 <body>
     <main class="container">
-        <h1>Resultaten</h1>
+        <h1>{{.Count}} Woorden uit de letters <code>{{.Letters}}</code></h1>
 
         <p><strong>Letters:</strong> <code>{{.Letters}}</code></p>
         <p><strong>Patroon:</strong> <code>{{.Pattern}}</code></p>
@@ -18,7 +18,7 @@
         {{if .Results}}
         <ul>
             {{range .Results}}
-            <li><strong>{{.Word}}</strong> <sub>{{.Score}} punten</sub></li>
+            <li><strong>{{.Word}}</strong> <sub>{{.Score}}</sub></li>
             {{end}}
         </ul>
         {{if .Overflow}}
@@ -28,7 +28,7 @@
         <p><em>Geen woorden gevonden</em></p>
         {{end}}
         <hr>
-        <p><a href="/">&ldsh; Ga terug</a></p>
+        <p><a href=".">&ldsh; Ga terug</a></p>
         <h2>Zoek opnieuw</h2>
         {{template "form.html" .}}
     </main>

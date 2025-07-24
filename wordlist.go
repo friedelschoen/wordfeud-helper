@@ -115,7 +115,7 @@ func FindWords(wordlist []string, letters, pattern string) []ScoredWord {
 		if b.Score != a.Score {
 			return b.Score - a.Score
 		}
-		return len(a.Word) - len(b.Word)
+		return len(b.Word) - len(a.Word)
 	})
 
 	return result

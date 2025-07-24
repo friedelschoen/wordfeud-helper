@@ -58,11 +58,13 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		Pattern  string
 		Results  []ScoredWord
 		Overflow int
+		Count    int
 	}{
 		Letters:  letters,
 		Pattern:  pattern,
 		Results:  scores,
 		Overflow: overflow,
+		Count:    len(scores),
 	})
 
 	if err != nil {
