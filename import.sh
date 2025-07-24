@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # update wordlist-repository
+git submodule init
 git submodule update
 
 # try renaming old wordlist
