@@ -18,12 +18,21 @@ func getWordList() []string {
 	if err != nil {
 		panic(err)
 	}
-	return strings.Split(string(content), "\n")
+	list := make([]string, 0, strings.Count(string(content), "\n"))
+	for line := range strings.SplitSeq(string(content), "\n") {
+		if len(line) > 0 {
+			list = append(list, line)
+		}
+	}
+	return list
 }
 
 func main() {
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/search", handleSearch)
+	// http.header.Add("Access-Control-Allow-Origin", "go.googlesource.com")
+	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
+	http.Handle("/static/fonts/", http.StripPrefix("/static/fonts", http.FileServer(http.Dir("./go-image/font/gofont/ttfs"))))
 
 	log.Println("Server luistert op http://localhost:8080")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))

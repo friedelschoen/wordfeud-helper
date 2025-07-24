@@ -5,12 +5,13 @@
     <meta charset="UTF-8">
     <title>Wordfeud Helper</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="static/style.css">
 </head>
 
 <body>
-    <main class="container">
-        <h1>{{.Count}} Woorden uit de letters <code>{{.Letters}}</code></h1>
+    <div class="container">
+        <h1>Wordfeud Helper</h1>
+        <h2>{{.Count}} woorden gevonden</h2>
 
         <p><strong>Letters:</strong> <code>{{.Letters}}</code></p>
         <p><strong>Patroon:</strong> <code>{{.Pattern}}</code></p>
@@ -31,7 +32,8 @@
         <p><a href=".">&ldsh; Ga terug</a></p>
         <h2>Zoek opnieuw</h2>
         {{template "form.html" .}}
-    </main>
+        <div>Gemaakt met &lt;3 door Friedel Sch&ouml;n</div>
+    </div>
 </body>
 
 </html>

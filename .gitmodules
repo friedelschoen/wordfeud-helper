@@ -1,0 +1,6 @@
+[submodule "opentaal-wordlist"]
+	path = opentaal-wordlist
+	url = https://github.com/OpenTaal/opentaal-wordlist.git
+[submodule "go-image"]
+	path = go-image
+	url = https://go.googlesource.com/image
