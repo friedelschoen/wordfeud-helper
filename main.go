@@ -101,39 +101,32 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 			scores = scores[:100]
 		}
 
-		longest := 0
+		curlen := 0
 		for _, word := range scores {
-			if len(word.Word) > longest {
-				longest = len(word.Word)
+			if len(word.Word) != curlen {
+				curlen = len(word.Word)
+				fmt.Fprintf(w, "\n<h3>%d Letters</h3>\n", curlen)
+			} else {
+				fmt.Fprintf(w, ", ")
 			}
-		}
-
-		scorebysize := make([][]ScoredWord, longest+1)
-		for _, word := range scores {
-			scorebysize[len(word.Word)] = append(scorebysize[len(word.Word)], word)
-		}
-
-		for length := len(scorebysize) - 1; length >= 0; length-- {
-			sc := scorebysize[length]
-			if len(sc) == 0 {
-				continue
-			}
-			fmt.Fprintf(w, "<h3>%d Letters</h3>\n", length)
-			for i, word := range sc {
-				if i > 0 {
-					fmt.Fprintf(w, ", ")
+			for _, chr := range word.Word {
+				l := byte(chr) - 'a'
+				if word.Consumed[l] > 0 {
+					fmt.Fprintf(w, "<span style='color: red;'>%c</span>", chr)
+					word.Consumed[l]--
+				} else {
+					fmt.Fprintf(w, "%c", chr)
 				}
-				fmt.Fprintf(w, "<strong>%s</strong><sub>%d</sub>", word.Word, word.Score)
 			}
-			fmt.Fprintln(w)
+			fmt.Fprintf(w, "<sub>%d</sub>", word.Score)
 		}
+		fmt.Fprintln(w)
 		if overflow > 0 {
 			fmt.Fprintf(w, "<p><strong>en %d meer...</strong></p>\n", overflow)
 		}
 	} else {
 		fmt.Fprintf(w, "<p><em>Geen woorden gevonden</em></p>\n")
 	}
-	fmt.Fprintf(w, "<hr>\n")
 	fmt.Fprintf(w, "<p><a href='.'>&ldsh; Ga terug</a></p>\n")
 	fmt.Fprintf(w, "<h2>Zoek opnieuw</h2>\n")
 	writeEpilog(w, letters, pattern)

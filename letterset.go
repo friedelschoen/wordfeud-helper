@@ -4,6 +4,7 @@ type LetterSet struct {
 	Available    [26]uint8
 	Jokers       int
 	JokerLetters [26]uint8
+	Consumed     [26]uint8
 }
 
 func NewLetterSet(letters []byte) LetterSet {
@@ -29,12 +30,14 @@ func (s *LetterSet) Consume(letter byte) bool {
 	}
 	if s.Available[l] > 0 {
 		s.Available[l]--
+		s.Consumed[l]++
 		return true
 	}
 
 	if s.Jokers > 0 {
 		s.Jokers--
 		s.JokerLetters[l]++
+		s.Consumed[l]++
 		return true
 	}
 	return false

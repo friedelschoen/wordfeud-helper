@@ -33,7 +33,7 @@ var LetterPoints = [...]int{
 	5,  // Z
 }
 
-func match(pattern, word string, set LetterSet) (bool, [26]uint8) {
+func match(pattern, word string, set LetterSet) (bool, [26]uint8, [26]uint8) {
 	p, w := 0, 0
 
 	for p < len(pattern) {
@@ -41,7 +41,7 @@ func match(pattern, word string, set LetterSet) (bool, [26]uint8) {
 		case '%', '*':
 			// Probeer alle mogelijke splits: 0 tot len(word)-w
 			for i := w; i <= len(word); i++ {
-				local := set // kopie van LetterSet
+				local := set
 				if pattern[p] == '%' {
 					valid := true
 					for j := w; j < i; j++ {
@@ -51,35 +51,35 @@ func match(pattern, word string, set LetterSet) (bool, [26]uint8) {
 						}
 					}
 					if !valid {
-						return false, set.JokerLetters
+						return false, set.JokerLetters, set.Consumed
 					}
 				}
-				if ok, jokers := match(pattern[p+1:], word[i:], local); ok {
-					return true, jokers
+				if ok, jokers, consumed := match(pattern[p+1:], word[i:], local); ok {
+					return true, jokers, consumed
 				}
 			}
-			return false, set.JokerLetters
+			return false, set.JokerLetters, set.Consumed
 
 		case '?', '&':
 			if w >= len(word) {
-				return false, set.JokerLetters
+				return false, set.JokerLetters, set.Consumed
 			}
 			if pattern[p] == '?' && !set.Consume(word[w]) {
-				return false, set.JokerLetters
+				return false, set.JokerLetters, set.Consumed
 			}
 			p++
 			w++
 
 		default:
 			if w >= len(word) || pattern[p] != word[w] {
-				return false, set.JokerLetters
+				return false, set.JokerLetters, set.Consumed
 			}
 			p++
 			w++
 		}
 	}
 
-	return p == len(pattern) && w == len(word), set.JokerLetters
+	return p == len(pattern) && w == len(word), set.JokerLetters, set.Consumed
 }
 
 func WordScore(word string, jokers [26]uint8) int {
@@ -99,23 +99,24 @@ func WordScore(word string, jokers [26]uint8) int {
 }
 
 type ScoredWord struct {
-	Word  string
-	Score int
+	Word     string
+	Score    int
+	Consumed [26]uint8
 }
 
 func FindWords(wordlist []string, letters, pattern string) []ScoredWord {
 	set := NewLetterSet([]byte(letters))
 	var result []ScoredWord
 	for _, w := range wordlist {
-		if ok, jokers := match(pattern, w, set); ok {
-			result = append(result, ScoredWord{w, WordScore(w, jokers)})
+		if ok, jokers, letterset := match(pattern, w, set); ok {
+			result = append(result, ScoredWord{w, WordScore(w, jokers), letterset})
 		}
 	}
 	slices.SortFunc(result, func(a, b ScoredWord) int {
-		if b.Score != a.Score {
-			return b.Score - a.Score
+		if len(b.Word) != len(a.Word) {
+			return len(b.Word) - len(a.Word)
 		}
-		return len(b.Word) - len(a.Word)
+		return b.Score - a.Score
 	})
 
 	return result
