@@ -5,8 +5,16 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'Go';
+    src: url('fonts/Go-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
-    font-family: 'Go Mono', monospace;
+    /* font-family: 'Go Mono', monospace; */
+    font-family: 'Go', sans-serif;
     background-color: #ffffff;
     color: #000000;
     margin: 0;
@@ -90,21 +98,22 @@ table:not(#about-table) td:not(:first-child) {
     min-width: 32px;
 }
 
+.mono {
+    font-family: 'Go Mono', monospace;
+}
+
 code,
 pre {
+    font-family: 'Go Mono', monospace;
     background-color: #eee;
     border-radius: 5px;
     padding: 2px 5px;
 }
 
-sub {
-    margin-left: 2px;
-}
-
 input[type="text"],
 select,
 textarea {
-    font-family: inherit;
+    font-family: 'Go Mono', monospace;
     font-size: 1rem;
     padding: 0.4em 0.6em;
     border: 1px solid #ccc;
