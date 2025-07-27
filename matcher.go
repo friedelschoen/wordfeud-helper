@@ -4,9 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
+	"time"
 )
 
 var NoMatch = errors.New("no match")
+
+const Timeout = 2 * time.Second
 
 var LetterPoints = LetterCount{
 	1,  // A
@@ -183,17 +187,44 @@ type ScoredWord struct {
 	Score int
 }
 
-func FindWords(wordlist []string, letters, pattern string) ([]ScoredWord, error) {
+func FindWords(wordlist []string, letters, pattern string, sortPoints bool) ([]ScoredWord, int, error) {
 	set := NewLetterSet([]byte(letters))
-	var result []ScoredWord
+	var result LimitedSortedSlice[ScoredWord]
+	result.Limit = 100
+	result.Compare = func(a, b ScoredWord) int {
+		if sortPoints {
+			if b.Score != a.Score {
+				return b.Score - a.Score
+			}
+			if len(b.Word) != len(a.Word) {
+				return len(b.Word) - len(a.Word)
+			}
+		} else {
+			if len(b.Word) != len(a.Word) {
+				return len(b.Word) - len(a.Word)
+			}
+			if b.Score != a.Score {
+				return b.Score - a.Score
+			}
+		}
+		return strings.Compare(a.Word, b.Word)
+	}
+
+	timer := time.NewTimer(Timeout)
 	for _, w := range wordlist {
+		select {
+		case <-timer.C:
+			return nil, 0, fmt.Errorf("timeout")
+		default:
+		}
 		lettermods := make([]LetterMod, len(w))
 		set, mods, score, err := match(pattern, w, 0, set, lettermods, WordScores{})
 		if err == nil {
-			result = append(result, ScoredWord{set, mods, w, int(score)})
+			result.Add(ScoredWord{set, mods, w, int(score)})
 		} else if err != NoMatch {
-			return nil, err
+			return nil, 0, err
 		}
 	}
-	return result, nil
+
+	return result.Arr, max(0, result.N-len(result.Arr)), nil
 }

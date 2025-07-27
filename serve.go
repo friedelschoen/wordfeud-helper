@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"slices"
 	"strings"
 	"unicode"
 )
@@ -72,25 +71,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	if pattern == "" {
 		pattern = "%"
 	}
-	scores, err := FindWords(wordlist, letters, pattern)
-	slices.SortFunc(scores, func(a, b ScoredWord) int {
-		if sortPoints {
-			if b.Score != a.Score {
-				return b.Score - a.Score
-			}
-			if len(b.Word) != len(a.Word) {
-				return len(b.Word) - len(a.Word)
-			}
-		} else {
-			if len(b.Word) != len(a.Word) {
-				return len(b.Word) - len(a.Word)
-			}
-			if b.Score != a.Score {
-				return b.Score - a.Score
-			}
-		}
-		return strings.Compare(a.Word, b.Word)
-	})
+	scores, overflow, err := FindWords(wordlist, letters, pattern, sortPoints)
 
 	w.Write(prologue)
 
@@ -110,12 +91,6 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(scores) > 0 {
-		overflow := 0
-		if len(scores) > 100 {
-			overflow = len(scores) - 100
-			scores = scores[:100]
-		}
-
 		current := 0
 		for _, word := range scores {
 			if sortPoints {
