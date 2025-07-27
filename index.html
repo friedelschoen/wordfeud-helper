@@ -3,11 +3,53 @@
     Welkom bij mijn Wordfeud Helper. Hier kan je gemakkelijk woorden zoeken voor Wordfeud, maar ook voor andere
     spellen zoals Scrabble.
 </p>
+
+<h2>Uitleg patroon</h2>
 <p>
-    Je kan zoeken op een patroon, bijvoorbeeld zou je woord beginnen met een <code>V</code> en eindigen op een
-    <code>R</code> gevolgd van een willekeurige letter uit mijn set en een <code>N</code>? Dan is je patroon
-    <code>V%R?N</code>. Als je letters <code>rutewou</code> zijn, dan zou je <i>vuurtoren</i> kunnen leggen.
+<ul>
+    <li><code>?</code> - Eén willekeurige letter uit je eigen letterset.<br>
+        <small>Voorbeeld: <code>?at</code> vindt <i>bat</i>, <i>cat</i>, <i>rat</i>, enz.</small>
+    </li>
+    <li><code>%</code> - Nul of meer letters uit je set.<br>
+        <small>Voorbeeld: <code>p%r</code> vindt <i>per</i>, <i>poker</i>, <i>pauwer</i>, enz.</small>
+    </li>
+    <li><code>&amp;</code> - Eén willekeurige letter, ook als je die niet in je set hebt.<br>
+        <small>Handig voor vaste letters van het bord.</small>
+    </li>
+    <li><code>*</code> - Nul of meer willekeurige letters, ook als je die niet in je set hebt.<br>
+        <small>Handig voor vaste letters van het bord.</small>
+    </li>
+    <li><code>2w</code>, <code>3w</code> - Verdubbelt of verdrievoudigt de <strong>woordscore</strong>.<br>
+        <small>Simuleert een 2x of 3x woordscore op het bord.</small>
+    </li>
+    <li><code>2l</code>, <code>3l</code> - Verdubbelt of verdrievoudigt de <strong>letterwaarde</strong> van de
+        vorige letter.<br>
+        <small>Simuleert een 2x of 3x letterscore op het bord.</small>
+    </li>
+</ul>
 </p>
+<h3>Voorbeelden</h3>
+<p>
+    <strong>Patroon:</strong> <code>v%r?n</code><br>
+    <strong>Letters:</strong> <code>rutewou</code><br>
+    <strong>Resultaat:</strong> <code><b>vuurtoren</b></code><br>
+    <small>
+        Betekenis: het woord begint met <code>v</code>, daarna één of meer letters uit je set (<code>%</code>),
+        dan een <code>r</code>, dan een willekeurige letter uit je set (<code>?</code>), gevolgd door een
+        <code>n</code>.
+    </small>
+</p>
+<p>
+    <strong>Patroon:</strong> <code>p?2l</code><br>
+    <small>
+        Betekenis: een woord beginnend met <code>p</code>, gevolgd door een willekeurige letter uit je set,
+        waarvan de letterwaarde wordt verdubbeld met <code>2l</code>.
+    </small>
+</p>
+<p>
+    <i>Je hoeft geen hoofdletters te gebruiken - alles wordt automatisch omgezet.</i>
+</p>
+<h2>Woordenlijst</h2>
 <p>
     Dank aan <a href="https://www.opentaal.org/">OpenTaal</a> voor hun
     <a href="https://github.com/OpenTaal/opentaal-wordlist">woordenlijst</a>. Deze is geïmporteerd hiervoor,

@@ -72,17 +72,17 @@ func NewLetterSet(letters []byte) LetterSet {
 	return s
 }
 
-func (s *LetterSet) Consume(letter byte) bool {
+func (s *LetterSet) Consume(letter byte) (uint, bool) {
 	if s.Available.Decrement(letter) {
 		s.Consumed.Increment(letter)
-		return true
+		return LetterPoints.Get(letter), true
 	}
 
 	if s.Jokers > 0 {
 		s.Jokers--
 		s.JokerLetters.Increment(letter)
 		s.Consumed.Increment(letter)
-		return true
+		return 0, true
 	}
-	return false
+	return 0, false
 }

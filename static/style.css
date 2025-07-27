@@ -158,6 +158,25 @@ details summary {
     color: #00b3ff;
 }
 
+.mul.l {
+    background-color: #c5edff;
+}
+
+.mul.w {
+    background-color: #c5ffc6;
+}
+
+.mul {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sub {
+    font-size: 0.8em;
+    line-height: 1;
+}
+
 @media (min-width: 640px) {
     .container {
         max-width: 700px;

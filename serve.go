@@ -72,7 +72,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	if pattern == "" {
 		pattern = "%"
 	}
-	scores := FindWords(wordlist, letters, pattern)
+	scores, err := FindWords(wordlist, letters, pattern)
 	slices.SortFunc(scores, func(a, b ScoredWord) int {
 		if sortPoints {
 			if b.Score != a.Score {
@@ -105,6 +105,9 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(w, "\n")
 	fmt.Fprintf(w, "<p><strong>Letters:</strong> <code>%s</code> - <strong>Patroon:</strong> <code>%s</code></p>\n", letters, pattern)
+	if err != nil {
+		fmt.Fprintf(w, "<h3 style='color: red;'>%v</h3>\n", err)
+	}
 
 	if len(scores) > 0 {
 		overflow := 0
@@ -139,15 +142,29 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			fmt.Fprintf(w, "<span class='mono'>\n")
-			for _, chr := range word.Word {
-				l := byte(chr) - 'a'
-				if word.Consumed[l] > 0 {
-					fmt.Fprintf(w, "<span style='color: red;'>%c</span>", chr)
-					word.Consumed[l]--
+			wasconsumed := false
+			for i, chr := range word.Word {
+				if word.Mods[i].Consumed != wasconsumed {
+					wasconsumed = word.Mods[i].Consumed
+					if wasconsumed {
+						fmt.Fprintf(w, "<span style='color: red;'>")
+					} else {
+						fmt.Fprintf(w, "</span>")
+					}
+				}
+
+				if word.Mods[i].WMul > 0 {
+					fmt.Fprintf(w, "<span class='mul w'><span class='main'>%c</span><span class='sub'>%d</span></span>", chr, word.Mods[i].WMul)
+				} else if word.Mods[i].LMul > 0 {
+					fmt.Fprintf(w, "<span class='mul l'><span class='main'>%c</span><span class='sub'>%d</span></span>", chr, word.Mods[i].LMul)
 				} else {
 					fmt.Fprintf(w, "%c", chr)
 				}
 			}
+			if wasconsumed {
+				fmt.Fprintf(w, "</span>")
+			}
+
 			fmt.Fprintf(w, "</span>\n")
 			fmt.Fprintf(w, "<sub>%d</sub>", word.Score)
 		}
