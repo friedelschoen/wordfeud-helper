@@ -4,9 +4,6 @@
 git submodule init
 git submodule update
 
-# try renaming old wordlist
-mv wordlist.txt wordlist.txt.old 2> /dev/null || true
-
 # write new wordlist
 # sort basiswoorden-gekeurd, otherwise `comm` will complain
 # grep only letter-words which are longer than 2 characters
