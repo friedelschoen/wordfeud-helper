@@ -34,7 +34,7 @@ func serve() {
 func cleanString(input string) string {
 	return strings.Map(func(r rune) rune {
 		r = unicode.ToLower(r)
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune("%?&*", r) {
+		if unicode.IsLetter(r) || strings.ContainsRune("?", r) {
 			return r
 		}
 		return -1
@@ -66,23 +66,24 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	pattern := r.URL.Query().Get("pattern")
 	sortPoints := r.URL.Query().Get("sort") == "points"
 	letters = cleanString(letters)
-	pattern = cleanString(pattern)
+	var scores []ScoredWord
+	var overflow int
 
-	if pattern == "" {
-		pattern = "%"
+	pattern, err := preparePattern(pattern)
+	if err == nil {
+		scores, overflow, err = FindWords(wordlist, letters, pattern, sortPoints)
 	}
-	scores, overflow, err := FindWords(wordlist, letters, pattern, sortPoints)
 
 	w.Write(prologue)
 
 	fmt.Fprintf(w, "<h1>Wordfeud Helper</h1>\n")
-	switch len(scores) {
+	switch overflow {
 	case 0:
 		fmt.Fprintf(w, "<h2>Geen woorden gevonden</h2>\n")
 	case 1:
-		fmt.Fprintf(w, "<h2>&Eacute;&eacute;n woord gevonden</h2>\n")
+		fmt.Fprintf(w, "<h2>1 woord gevonden</h2>\n")
 	default:
-		fmt.Fprintf(w, "<h2>%d woorden gevonden</h2>\n", len(scores))
+		fmt.Fprintf(w, "<h2>%d woorden gevonden</h2>\n", overflow)
 	}
 	fmt.Fprintf(w, "\n")
 	fmt.Fprintf(w, "<p><strong>Letters:</strong> <code>%s</code> - <strong>Patroon:</strong> <code>%s</code></p>\n", letters, pattern)

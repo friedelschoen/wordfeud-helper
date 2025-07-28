@@ -6,11 +6,13 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 var NoMatch = errors.New("no match")
 
-const Timeout = 2 * time.Second
+const Timeout = 5 * time.Second
 
 var LetterPoints = LetterCount{
 	1,  // A
@@ -62,122 +64,220 @@ type LetterMod struct {
 	Consumed bool
 }
 
-func match(pattern, word string, w int, set LetterSet, lettermods []LetterMod, score WordScores) (LetterSet, []LetterMod, uint, error) {
+func preparePattern(pattern string) (string, error) {
+	if pattern == "" {
+		pattern = "%"
+	}
+
+	res := make([]rune, 0, len(pattern))
+	prev := utf8.RuneError
+	for _, cur := range pattern {
+		if !unicode.IsLetter(cur) && !strings.ContainsRune("%?&*123456789", cur) {
+			return "", fmt.Errorf("Illegal character `%c`", cur)
+		}
+		if unicode.IsDigit(cur) && (prev == '%' || prev == '*') {
+			return "", fmt.Errorf("Multiplier after nullable character")
+		}
+		if cur == '%' && (prev == '%' || prev == '*') {
+			continue
+		}
+		if cur == '*' && (prev == '%' || prev == '*') {
+			continue
+		}
+		prev = cur
+		res = append(res, unicode.ToLower(cur))
+	}
+	return string(res), nil
+}
+
+func match(pattern, word string, set LetterSet, lettermods []LetterMod, score WordScores) (LetterSet, uint, error) {
 	if score.Multiplier == 0 {
 		score.Multiplier = 1
+	}
+	var prevmod *LetterMod
+	for len(pattern) > 0 && len(word) > 0 {
+		if strings.ContainsRune("%*?&123456789", rune(pattern[0])) {
+			break
+		}
+		if pattern[0] != word[0] {
+			return set, 0, NoMatch
+		}
+		pattern = pattern[1:]
+		word = word[1:]
+		prevmod = &lettermods[0]
+		lettermods = lettermods[1:]
 	}
 
 	for len(pattern) > 0 {
 		switch pattern[0] {
-		case '%', '*':
+		case '%':
+			if len(pattern) == 1 {
+				for i, w := range word {
+					sc, ok := set.Consume(byte(w))
+					if !ok {
+						return set, 0, NoMatch
+					}
+					lettermods[i].Consumed = true
+					score.Add(sc)
+				}
+				return set, score.Sum(), nil
+			}
+
 			var bestset LetterSet
 			var bestmods []LetterMod
 			var besttotal uint
 			isvalid := false
 
-			for i := w; i <= len(word); i++ {
+			for i := 0; i <= len(word); i++ {
 				localset := set
 				localscore := score
-				localmods := slices.Clone(lettermods)
+				localmods := lettermods
+				if i != 0 {
+					localmods = slices.Clone(lettermods)
+				}
 
 				valid := true
-				if pattern[0] == '%' {
-					for j := w; j < i; j++ {
-						pts, ok := localset.Consume(word[j])
-						if !ok {
-							valid = false
-							break
-						}
-						localscore.Add(pts)
-						localmods[j].Consumed = true
+				for j := range i {
+					pts, ok := localset.Consume(word[j])
+					if !ok {
+						valid = false
+						break
 					}
-				} else {
-					for j := w; j < i; j++ {
-						localscore.Add(LetterPoints.Get(word[j]))
-					}
+					localscore.Add(pts)
+					localmods[j].Consumed = true
 				}
 				if !valid {
 					break
 				}
 
-				if matchedset, mods, totalscore, err := match(pattern[1:], word, i, localset, localmods, localscore); err == nil {
+				if matchedset, totalscore, err := match(pattern[1:], word[i:], localset, localmods[i:], localscore); err == nil {
 					if !isvalid || totalscore > besttotal {
 						bestset = matchedset
-						bestmods = mods
+						bestmods = localmods
 						besttotal = totalscore
 					}
 					isvalid = true
 				} else if err != NoMatch {
-					return set, nil, 0, err
+					return set, 0, err
 				}
 			}
 
 			if !isvalid {
-				return set, nil, 0, NoMatch
+				return set, 0, NoMatch
 			}
-			return bestset, bestmods, besttotal, nil
+			copy(lettermods, bestmods)
+			return bestset, besttotal, nil
+
+		case '*':
+			if len(pattern) == 1 {
+				for _, w := range word {
+					score.Add(LetterPoints.Get(byte(w)))
+				}
+				return set, score.Sum(), nil
+			}
+
+			var bestset LetterSet
+			var bestmods []LetterMod
+			var besttotal uint
+			isvalid := false
+
+			for i := 0; i <= len(word); i++ {
+				localset := set
+				localscore := score
+				localmods := lettermods
+				if i != 0 {
+					localmods = slices.Clone(lettermods)
+				}
+
+				for j := range i {
+					localscore.Add(LetterPoints.Get(word[j]))
+				}
+
+				if matchedset, totalscore, err := match(pattern[1:], word[i:], localset, localmods[i:], localscore); err == nil {
+					if !isvalid || totalscore > besttotal {
+						bestset = matchedset
+						bestmods = localmods
+						besttotal = totalscore
+					}
+					isvalid = true
+				} else if err != NoMatch {
+					return set, 0, err
+				}
+			}
+
+			if !isvalid {
+				return set, 0, NoMatch
+			}
+			copy(lettermods, bestmods)
+			return bestset, besttotal, nil
 
 		case '?':
-			if w >= len(word) {
-				return set, nil, 0, NoMatch
+			if len(word) == 0 {
+				return set, 0, NoMatch
 			}
-			letterscore, ok := set.Consume(word[w])
+			letterscore, ok := set.Consume(word[0])
 			if !ok {
-				return set, nil, 0, NoMatch
+				return set, 0, NoMatch
 			}
-			lettermods[w].Consumed = true
+			lettermods[0].Consumed = true
 			score.Add(letterscore)
 			pattern = pattern[1:]
-			w++
+			word = word[1:]
+			prevmod = &lettermods[0]
+			lettermods = lettermods[1:]
 
 		case '&':
-			if w >= len(word) {
-				return set, nil, 0, NoMatch
+			if len(word) == 0 {
+				return set, 0, NoMatch
 			}
-			score.Add(LetterPoints.Get(word[w]))
+			score.Add(LetterPoints.Get(word[0]))
 			pattern = pattern[1:]
-			w++
+			word = word[1:]
+			prevmod = &lettermods[0]
+			lettermods = lettermods[1:]
 
 		case '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			if len(pattern) < 2 {
-				return set, nil, 0, fmt.Errorf("expected W or L after digit, got end-of-pattern")
+				return set, 0, fmt.Errorf("expected W or L after digit, got end-of-pattern")
 			}
-			if w == 0 {
-				return set, nil, 0, fmt.Errorf("unexpected multiplier at beginning of string")
+			if prevmod == nil {
+				return set, 0, fmt.Errorf("unexpected multiplier at beginning of string")
 			}
 			mul := uint(pattern[0] - '0')
 			switch pattern[1] {
 			case 'w':
 				score.Multiplier *= mul
-				if lettermods[w-1].LMul > 0 {
-					return set, nil, 0, fmt.Errorf("W-multiplier after L-multiplier")
+				if prevmod.LMul > 0 {
+					return set, 0, fmt.Errorf("W-multiplier after L-multiplier")
 				}
-				lettermods[w-1].WMul = mul
+				prevmod.WMul = mul
 			case 'l':
 				score.LastLetter *= mul
-				if lettermods[w-1].WMul > 0 {
-					return set, nil, 0, fmt.Errorf("L-multiplier after W-multiplier")
+				if prevmod.WMul > 0 {
+					return set, 0, fmt.Errorf("L-multiplier after W-multiplier")
 				}
-				lettermods[w-1].LMul = mul
+				prevmod.LMul = mul
 			default:
-				return set, nil, 0, fmt.Errorf("expected W or L after digit, got `%s`", pattern[:2])
+				return set, 0, fmt.Errorf("expected W or L after digit, got `%s`", pattern[:2])
 			}
 			pattern = pattern[2:]
 
 		default:
-			if w >= len(word) || pattern[0] != word[w] {
-				return set, nil, 0, NoMatch
+			if len(word) == 0 || pattern[0] != word[0] {
+				return set, 0, NoMatch
 			}
-			score.Add(LetterPoints.Get(word[w]))
+			score.Add(LetterPoints.Get(word[0]))
 			pattern = pattern[1:]
-			w++
+			word = word[1:]
+			prevmod = &lettermods[0]
+			lettermods = lettermods[1:]
 		}
 	}
 
-	if len(pattern) != 0 || w != len(word) {
-		return set, nil, 0, NoMatch
+	if len(pattern) != 0 || len(word) != 0 {
+		return set, 0, NoMatch
 	}
-	return set, lettermods, score.Sum(), nil
+	return set, score.Sum(), nil
 }
 
 type ScoredWord struct {
@@ -218,9 +318,9 @@ func FindWords(wordlist []string, letters, pattern string, sortPoints bool) ([]S
 		default:
 		}
 		lettermods := make([]LetterMod, len(w))
-		set, mods, score, err := match(pattern, w, 0, set, lettermods, WordScores{})
+		set, score, err := match(pattern, w, set, lettermods, WordScores{})
 		if err == nil {
-			result.Add(ScoredWord{set, mods, w, int(score)})
+			result.Add(ScoredWord{set, lettermods, w, int(score)})
 		} else if err != NoMatch {
 			return nil, 0, err
 		}
